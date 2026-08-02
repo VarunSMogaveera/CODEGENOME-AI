@@ -1,6 +1,10 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { Doughnut } from 'react-chartjs-2';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
+
+ChartJS.register(ArcElement, Tooltip, Legend);
 
 type RecentCommit = {
   hash?: string;
@@ -81,6 +85,18 @@ export default function HomePage() {
 
   const languageBreakdown = repository?.language_breakdown || [];
   const totalLanguageFiles = languageBreakdown.reduce((s, it) => s + (it.file_count || 0), 0);
+  const chartData = {
+    labels: languageBreakdown.map((l) => l.language || 'Unknown'),
+    datasets: [
+      {
+        data: languageBreakdown.map((l) => l.file_count || 0),
+        backgroundColor: [
+          '#60a5fa', '#34d399', '#f59e0b', '#f97316', '#ef4444', '#a78bfa', '#f472b6', '#94a3b8'
+        ],
+        borderWidth: 0,
+      },
+    ],
+  };
 
   return (
     <main className="page-shell">
@@ -206,7 +222,11 @@ export default function HomePage() {
 
             <div className="signal-card">
               <h3>Language breakdown</h3>
-                <div className="list-stack">
+                <div className="list-stack" style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: 12, alignItems: 'start' }}>
+                  <div style={{ width: 140 }}>
+                    <Doughnut data={chartData} />
+                  </div>
+                  <div>
                   {(languageBreakdown && languageBreakdown.length > 0)
                     ? languageBreakdown.map((item) => {
                         const count = item.file_count ?? 0;
@@ -240,6 +260,7 @@ export default function HomePage() {
                       </div>
                     ))
                   : <p className="muted">No recent commit history available.</p>}
+                </div>
               </div>
             </div>
 
