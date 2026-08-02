@@ -87,10 +87,46 @@ def analyze_repository(repo_path: str) -> dict:
 
     file_count = len(files)
     language = "Unknown"
-    if any(path.suffix.lower() == ".py" for path in files):
-        language = "Python"
-    elif any(path.suffix.lower() == ".js" or path.suffix.lower() == ".ts" for path in files):
-        language = "JavaScript/TypeScript"
+    language_breakdown = []
+    language_counts = Counter()
+    for path in files:
+        suffix = path.suffix.lower()
+        if suffix == ".py":
+            language_counts["Python"] += 1
+        elif suffix in {".js", ".jsx", ".ts", ".tsx"}:
+            language_counts["JavaScript"] += 1
+        elif suffix == ".java":
+            language_counts["Java"] += 1
+        elif suffix == ".cs":
+            language_counts["C#"] += 1
+        elif suffix == ".cpp" or suffix == ".cc" or suffix == ".cxx" or suffix == ".c":
+            language_counts["C/C++"] += 1
+        elif suffix == ".go":
+            language_counts["Go"] += 1
+        elif suffix == ".rb":
+            language_counts["Ruby"] += 1
+        elif suffix == ".php":
+            language_counts["PHP"] += 1
+        elif suffix == ".md":
+            language_counts["Markdown"] += 1
+        elif suffix == ".json":
+            language_counts["JSON"] += 1
+        elif suffix == ".yml" or suffix == ".yaml":
+            language_counts["YAML"] += 1
+
+    if language_counts:
+        language_breakdown = [
+            {"language": language_name, "file_count": count}
+            for language_name, count in sorted(language_counts.items(), key=lambda item: item[1], reverse=True)
+        ]
+        if any(item["language"] == "Python" for item in language_breakdown):
+            language = "Python"
+        elif any(item["language"] == "Java" for item in language_breakdown):
+            language = "Java"
+        elif any(item["language"] == "JavaScript" for item in language_breakdown):
+            language = "JavaScript"
+        else:
+            language = language_breakdown[0]["language"]
 
     risk_factors = []
     if total_commits < 10:
@@ -115,6 +151,7 @@ def analyze_repository(repo_path: str) -> dict:
         "top_files": top_files,
         "risk_factors": risk_factors or ["Stable repository health"],
         "path": str(repo),
+        "language_breakdown": language_breakdown,
         "is_git_repository": True,
         "message": "Repository analysis completed successfully.",
     })
