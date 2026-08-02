@@ -83,6 +83,53 @@ class RepositoryServiceTests(unittest.TestCase):
             self.assertEqual(summary["repository_name"], "sample-repo")
             self.assertGreaterEqual(summary["total_commits"], 1)
 
+    def test_analyze_repository_includes_static_analysis(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo_path = Path(temp_dir) / "sample-repo"
+            repo_path.mkdir()
+
+            subprocess.run(["git", "init"], cwd=repo_path, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.run(["git", "config", "user.email", "tester@example.com"], cwd=repo_path, check=True)
+            subprocess.run(["git", "config", "user.name", "Tester"], cwd=repo_path, check=True)
+            (repo_path / "auth.py").write_text(
+                "from utils import logger\n\nclass AuthService:\n    def login(self):\n        return True\n",
+                encoding="utf-8",
+            )
+            subprocess.run(["git", "add", "."], cwd=repo_path, check=True)
+            subprocess.run(["git", "commit", "-m", "initial"], cwd=repo_path, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+            summary = analyze_repository(str(repo_path))
+
+            self.assertIn("static_analysis", summary)
+            static_analysis = summary["static_analysis"]
+            self.assertGreaterEqual(static_analysis["total_classes"], 1)
+            self.assertGreaterEqual(static_analysis["total_functions"], 1)
+            self.assertGreaterEqual(static_analysis["total_imports"], 1)
+            self.assertGreaterEqual(len(static_analysis["dependencies"]), 1)
+
+    def test_analyze_repository_includes_health_analysis(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo_path = Path(temp_dir) / "sample-repo"
+            repo_path.mkdir()
+
+            subprocess.run(["git", "init"], cwd=repo_path, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.run(["git", "config", "user.email", "tester@example.com"], cwd=repo_path, check=True)
+            subprocess.run(["git", "config", "user.name", "Tester"], cwd=repo_path, check=True)
+            (repo_path / "auth.py").write_text(
+                "from utils import logger\n\nclass AuthService:\n    def login(self):\n        return True\n",
+                encoding="utf-8",
+            )
+            subprocess.run(["git", "add", "."], cwd=repo_path, check=True)
+            subprocess.run(["git", "commit", "-m", "initial"], cwd=repo_path, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+            summary = analyze_repository(str(repo_path))
+
+            self.assertIn("health_analysis", summary)
+            health_analysis = summary["health_analysis"]
+            self.assertGreaterEqual(health_analysis["score"], 0)
+            self.assertLessEqual(health_analysis["score"], 100)
+            self.assertTrue(health_analysis["reasons"])
+
     def test_analyze_repository_input_reports_non_git_directories(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             folder = Path(temp_dir) / "plain-folder"

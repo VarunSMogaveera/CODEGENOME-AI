@@ -1,4 +1,5 @@
 import os
+import re
 import subprocess
 import tempfile
 from collections import Counter
@@ -16,6 +17,116 @@ def build_repository_summary(repository_name: str, language: str, total_commits:
         "total_commits": total_commits,
         "health_score": health_score,
         "risk_level": "Low" if health_score >= 85 else "Medium" if health_score >= 70 else "High",
+    }
+
+
+def _extract_static_analysis(files: list[Path]) -> dict:
+    """Extract lightweight structural metrics from source files for the v1.0 dashboard."""
+    classes = []
+    functions = []
+    imports = []
+    dependencies = []
+
+    for path in files:
+        if not path.is_file():
+            continue
+
+        suffix = path.suffix.lower()
+        if suffix not in {".py", ".js", ".jsx", ".ts", ".tsx", ".java", ".cs", ".go", ".rb", ".php"}:
+            continue
+
+        try:
+            content = path.read_text(encoding="utf-8")
+        except (UnicodeDecodeError, OSError):
+            continue
+
+        relative_path = str(path).replace("\\", "/")
+
+        if suffix == ".py":
+            class_matches = re.findall(r"^\s*class\s+([A-Za-z_][A-Za-z0-9_]*)", content, re.M)
+            function_matches = re.findall(r"^\s*def\s+([A-Za-z_][A-Za-z0-9_]*)", content, re.M)
+            import_matches = re.findall(r"^\s*(?:from\s+([\w\.]+)\s+import|import\s+([\w\.]+))", content, re.M)
+            for match in import_matches:
+                imported = next(part for part in match if part)
+                imports.append(imported)
+                if "." not in imported:
+                    dependencies.append(imported)
+            classes.extend([{"name": name, "file": relative_path} for name in class_matches])
+            functions.extend([{"name": name, "file": relative_path} for name in function_matches])
+        else:
+            class_matches = re.findall(r"\b(class|interface)\s+([A-Za-z_][A-Za-z0-9_]*)", content)
+            function_matches = re.findall(r"\b(function|def|void|class)\s+([A-Za-z_][A-Za-z0-9_]*)", content)
+            imports = imports
+            for match in class_matches:
+                classes.append({"name": match[1], "file": relative_path})
+            for match in function_matches:
+                functions.append({"name": match[1], "file": relative_path})
+
+    return {
+        "total_classes": len(classes),
+        "total_functions": len(functions),
+        "total_imports": len(imports),
+        "dependencies": sorted(set(dependencies)),
+        "class_summary": classes[:10],
+        "function_summary": functions[:10],
+    }
+
+
+def _build_health_analysis(total_commits: int, file_count: int, contributors_count: int, language_breakdown: list[dict], static_analysis: dict) -> dict:
+    """Build a structured health score and explanation from repository signals."""
+    score = 100
+    reasons = []
+
+    if total_commits < 10:
+        score -= 20
+        reasons.append("Low commit history")
+    elif total_commits < 30:
+        score -= 10
+        reasons.append("Modest commit activity")
+
+    if file_count > 200:
+        score -= 10
+        reasons.append("Large file footprint")
+    elif file_count > 100:
+        score -= 5
+        reasons.append("Growing repository size")
+
+    if contributors_count < 2:
+        score -= 15
+        reasons.append("Single-contributor risk")
+    elif contributors_count < 4:
+        score -= 5
+        reasons.append("Limited contributor diversity")
+
+    if static_analysis["total_functions"] > 50:
+        score -= 8
+        reasons.append("High function volume")
+
+    if len(static_analysis["dependencies"]) > 8:
+        score -= 8
+        reasons.append("Dependency sprawl")
+
+    if not language_breakdown:
+        score -= 5
+        reasons.append("Limited language signals")
+
+    if not reasons:
+        reasons.append("Repository looks healthy and maintainable")
+
+    score = max(0, min(100, score))
+    if score >= 85:
+        level = "Excellent"
+    elif score >= 70:
+        level = "Good"
+    elif score >= 50:
+        level = "Moderate"
+    else:
+        level = "Needs attention"
+
+    return {
+        "score": score,
+        "level": level,
+        "reasons": reasons,
     }
 
 
@@ -128,6 +239,15 @@ def analyze_repository(repo_path: str) -> dict:
         else:
             language = language_breakdown[0]["language"]
 
+    static_analysis = _extract_static_analysis(files)
+    health_analysis = _build_health_analysis(
+        total_commits=total_commits,
+        file_count=file_count,
+        contributors_count=len(contributors_list),
+        language_breakdown=language_breakdown,
+        static_analysis=static_analysis,
+    )
+
     risk_factors = []
     if total_commits < 10:
         risk_factors.append("Low commit history")
@@ -152,6 +272,8 @@ def analyze_repository(repo_path: str) -> dict:
         "risk_factors": risk_factors or ["Stable repository health"],
         "path": str(repo),
         "language_breakdown": language_breakdown,
+        "static_analysis": static_analysis,
+        "health_analysis": health_analysis,
         "is_git_repository": True,
         "message": "Repository analysis completed successfully.",
     })

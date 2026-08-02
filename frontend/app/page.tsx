@@ -17,6 +17,26 @@ type LanguageBreakdownItem = {
   file_count?: number;
 };
 
+type StaticAnalysisItem = {
+  name?: string;
+  file?: string;
+};
+
+type StaticAnalysis = {
+  total_classes?: number;
+  total_functions?: number;
+  total_imports?: number;
+  dependencies?: string[];
+  class_summary?: StaticAnalysisItem[];
+  function_summary?: StaticAnalysisItem[];
+};
+
+type HealthAnalysis = {
+  score?: number;
+  level?: string;
+  reasons?: string[];
+};
+
 type RepositorySummary = {
   repository_name?: string;
   language?: string;
@@ -31,6 +51,8 @@ type RepositorySummary = {
   risk_factors?: string[];
   path?: string;
   language_breakdown?: LanguageBreakdownItem[];
+  static_analysis?: StaticAnalysis;
+  health_analysis?: HealthAnalysis;
   is_git_repository?: boolean;
   message?: string;
 };
@@ -83,7 +105,7 @@ export default function HomePage() {
   const riskTone = (repository?.risk_level || "Medium").toLowerCase();
 
   const languageBreakdown = repository?.language_breakdown || [];
-  const totalLanguageFiles = languageBreakdown.reduce((s, it) => s + (it.file_count || 0), 0);
+  const staticAnalysis = repository?.static_analysis;
   const chartData = {
     labels: languageBreakdown.map((l) => l.language || 'Unknown'),
     datasets: [
@@ -208,6 +230,16 @@ export default function HomePage() {
                 <li>Path: {repository.path || "Unavailable"}</li>
                 <li>Status: {repository.message || "Analysis complete"}</li>
               </ul>
+              <div className="list-stack">
+                <div className="list-item">
+                  <strong>Health score</strong>
+                  <span>{repository.health_analysis?.score ?? repository.health_score ?? 0}/100</span>
+                </div>
+                <div className="list-item">
+                  <strong>Health level</strong>
+                  <span>{repository.health_analysis?.level || "Unknown"}</span>
+                </div>
+              </div>
             </div>
 
             <div className="signal-card">
@@ -225,6 +257,34 @@ export default function HomePage() {
                 {(languageBreakdown && languageBreakdown.length > 0)
                   ? <LanguageBreakdown data={languageBreakdown} />
                   : <p className="muted">No language data available.</p>}
+              </div>
+            </div>
+
+            <div className="signal-card">
+              <h3>Static structure</h3>
+              <div className="stats-grid">
+                <article className="stat-card">
+                  <span className="stat-label">Classes</span>
+                  <strong>{staticAnalysis?.total_classes ?? 0}</strong>
+                </article>
+                <article className="stat-card">
+                  <span className="stat-label">Functions</span>
+                  <strong>{staticAnalysis?.total_functions ?? 0}</strong>
+                </article>
+                <article className="stat-card">
+                  <span className="stat-label">Imports</span>
+                  <strong>{staticAnalysis?.total_imports ?? 0}</strong>
+                </article>
+              </div>
+              <div className="list-stack">
+                {staticAnalysis?.class_summary && staticAnalysis.class_summary.length > 0 ? (
+                  staticAnalysis.class_summary.map((entry) => (
+                    <div key={`${entry.name}-${entry.file}`} className="list-item">
+                      <strong>{entry.name || "Class"}</strong>
+                      <span>{entry.file || "Unknown file"}</span>
+                    </div>
+                  ))
+                ) : <p className="muted">No class-level structure detected.</p>}
               </div>
             </div>
 
