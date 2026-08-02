@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "test:e2e": "playwright test",
+    "prepare:e2e": "npx playwright install --with-deps"
   },
   "dependencies": {
     "next": "14.2.15",
@@ -26,5 +28,7 @@
     "@testing-library/react": "^14.0.0",
     "@testing-library/jest-dom": "^6.0.0",
     "jsdom": "^22.1.0"
+    ,
+    "@playwright/test": "^1.41.0"
   }
 }

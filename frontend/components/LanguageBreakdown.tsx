@@ -21,13 +21,37 @@ export default function LanguageBreakdown({ data }: { data: Item[] }) {
     ],
   };
 
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'right' as const,
+        labels: {
+          boxWidth: 12,
+          padding: 12,
+        },
+      },
+      tooltip: {
+        callbacks: {
+          label: function (context: any) {
+            const value = context.raw || 0;
+            const percent = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
+            return `${context.label}: ${value} files (${percent}%)`;
+          },
+        },
+      },
+    },
+  };
+
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 12 }}>
-      <div style={{ width: 140 }}>
-        <Doughnut data={chartData} />
+      <div style={{ width: 140, minHeight: 200 }}>
+        <Doughnut data={chartData} options={options} aria-label="Language breakdown chart" role="img" />
       </div>
       <div>
-        {data.map((item) => {
+        <div aria-hidden={false} aria-label="Language breakdown list">
+          {data.map((item) => {
           const count = item.file_count ?? 0;
           const pct = total > 0 ? Math.round((count / total) * 100) : 0;
           return (
@@ -42,6 +66,7 @@ export default function LanguageBreakdown({ data }: { data: Item[] }) {
             </div>
           );
         })}
+        </div>
       </div>
     </div>
   );
