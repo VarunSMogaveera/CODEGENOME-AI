@@ -79,6 +79,9 @@ export default function HomePage() {
   const repository = result?.repository;
   const riskTone = (repository?.risk_level || "Medium").toLowerCase();
 
+  const languageBreakdown = repository?.language_breakdown || [];
+  const totalLanguageFiles = languageBreakdown.reduce((s, it) => s + (it.file_count || 0), 0);
+
   return (
     <main className="page-shell">
       <section className="hero-card">
@@ -203,16 +206,25 @@ export default function HomePage() {
 
             <div className="signal-card">
               <h3>Language breakdown</h3>
-              <div className="list-stack">
-                {(repository.language_breakdown && repository.language_breakdown.length > 0)
-                  ? repository.language_breakdown.map((item) => (
-                      <div key={item.language} className="list-item">
-                        <strong>{item.language || "Unknown"}</strong>
-                        <span>{item.file_count ?? 0} files</span>
-                      </div>
-                    ))
-                  : <p className="muted">No language data available.</p>}
-              </div>
+                <div className="list-stack">
+                  {(languageBreakdown && languageBreakdown.length > 0)
+                    ? languageBreakdown.map((item) => {
+                        const count = item.file_count ?? 0;
+                        const pct = totalLanguageFiles > 0 ? Math.round((count / totalLanguageFiles) * 100) : 0;
+                        return (
+                          <div key={item.language} className="list-item" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <strong>{item.language || "Unknown"}</strong>
+                              <span>{count} files • {pct}%</span>
+                            </div>
+                            <div style={{ background: '#e6e6e6', height: 8, borderRadius: 4, overflow: 'hidden' }}>
+                              <div style={{ width: `${pct}%`, height: '100%', background: '#60a5fa' }} />
+                            </div>
+                          </div>
+                        );
+                      })
+                    : <p className="muted">No language data available.</p>}
+                </div>
             </div>
 
             <div className="signal-card">
