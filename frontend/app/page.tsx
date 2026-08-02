@@ -9,6 +9,11 @@ type RecentCommit = {
   message?: string;
 };
 
+type LanguageBreakdownItem = {
+  language?: string;
+  file_count?: number;
+};
+
 type RepositorySummary = {
   repository_name?: string;
   language?: string;
@@ -22,6 +27,7 @@ type RepositorySummary = {
   top_files?: string[];
   risk_factors?: string[];
   path?: string;
+  language_breakdown?: LanguageBreakdownItem[];
   is_git_repository?: boolean;
   message?: string;
 };
@@ -192,6 +198,20 @@ export default function HomePage() {
                 {(repository.contributors_list && repository.contributors_list.length > 0)
                   ? repository.contributors_list.map((name) => <span key={name} className="chip">{name}</span>)
                   : <span className="chip">No contributor data available</span>}
+              </div>
+            </div>
+
+            <div className="signal-card">
+              <h3>Language breakdown</h3>
+              <div className="list-stack">
+                {(repository.language_breakdown && repository.language_breakdown.length > 0)
+                  ? repository.language_breakdown.map((item) => (
+                      <div key={item.language} className="list-item">
+                        <strong>{item.language || "Unknown"}</strong>
+                        <span>{item.file_count ?? 0} files</span>
+                      </div>
+                    ))
+                  : <p className="muted">No language data available.</p>}
               </div>
             </div>
 
