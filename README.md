@@ -20,19 +20,56 @@ CodeChronicle AI is an AI-assisted engineering intelligence platform for analyzi
 ### Backend
 
 ```bash
+# Linux / macOS
 cd backend
 python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
+source .venv/bin/activate
 pip install -r requirements.txt
-uvicorn app.main:app --reload
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8010 --reload
+
+# Windows (PowerShell)
+cd backend
+python -m venv .venv
+. .venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8010 --reload
 ```
 
 ### Frontend
 
 ```bash
+# Frontend (Next.js)
 cd frontend
 npm install
-npm run dev
+# dev server (local)
+npm run dev -- --hostname 127.0.0.1 --port 3000
+
+# To build for production
+npm run build
+npm start
+```
+
+## Run & restart tips
+
+- If you change backend code and see stale responses, restart the backend server. On Windows you can find the process using:
+
+```powershell
+netstat -ano | findstr :8010
+taskkill /F /PID <pid>
+# then restart as above
+```
+
+- The frontend uses `NEXT_PUBLIC_API_URL` to call the backend. To point the frontend at a running local backend, set this in your environment before starting the dev server:
+
+```bash
+export NEXT_PUBLIC_API_URL=http://127.0.0.1:8010   # macOS / Linux
+setx NEXT_PUBLIC_API_URL "http://127.0.0.1:8010"  # Windows (persist)
+```
+
+- Quick API test (from backend folder):
+
+```bash
+.venv\Scripts\python.exe -c "import json,urllib.request; data=json.dumps({'repository_url':'https://github.com/owner/repo'}).encode(); req=urllib.request.Request('http://127.0.0.1:8010/repository/import', data=data, headers={'Content-Type':'application/json'}); print(urllib.request.urlopen(req).read().decode())"
 ```
 
 ## MVP scope
