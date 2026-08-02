@@ -123,6 +123,8 @@ input {
 }
 
 .form-card label {
+  display: block;
+  margin-bottom: 0.6rem;
   font-weight: 600;
   color: #e2e8f0;
 }

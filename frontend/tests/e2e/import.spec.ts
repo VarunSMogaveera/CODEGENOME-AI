@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test('import flow shows language breakdown chart and list', async ({ page }) => {
   // Ensure app loads
   await page.goto('/');
-  await expect(page).toHaveTitle(/Analyze any Git repository/i);
+  await expect(page.locator('text=Analyze any Git repository in seconds')).toBeVisible();
 
   // Fill sample repo and submit
   const sample = 'https://github.com/VarunSMogaveera/Supply-Chain-Tracker';

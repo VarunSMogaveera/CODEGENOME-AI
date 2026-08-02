@@ -1,10 +1,9 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { Doughnut } from 'react-chartjs-2';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
-
-ChartJS.register(ArcElement, Tooltip, Legend);
+import LanguageBreakdown from "../components/LanguageBreakdown";
+import CommitTimeline from "../components/CommitTimeline";
+import ContributorTrends from "../components/ContributorTrends";
 
 type RecentCommit = {
   hash?: string;
@@ -222,29 +221,11 @@ export default function HomePage() {
 
             <div className="signal-card">
               <h3>Language breakdown</h3>
-                <div className="list-stack" style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: 12, alignItems: 'start' }}>
-                  <div style={{ width: 140 }}>
-                    <Doughnut data={chartData} />
-                  </div>
-                  <div>
-                  {(languageBreakdown && languageBreakdown.length > 0)
-                    ? languageBreakdown.map((item) => {
-                        const count = item.file_count ?? 0;
-                        const pct = totalLanguageFiles > 0 ? Math.round((count / totalLanguageFiles) * 100) : 0;
-                        return (
-                          <div key={item.language} className="list-item" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <strong>{item.language || "Unknown"}</strong>
-                              <span>{count} files • {pct}%</span>
-                            </div>
-                            <div style={{ background: '#e6e6e6', height: 8, borderRadius: 4, overflow: 'hidden' }}>
-                              <div style={{ width: `${pct}%`, height: '100%', background: '#60a5fa' }} />
-                            </div>
-                          </div>
-                        );
-                      })
-                    : <p className="muted">No language data available.</p>}
-                </div>
+              <div className="list-stack">
+                {(languageBreakdown && languageBreakdown.length > 0)
+                  ? <LanguageBreakdown data={languageBreakdown} />
+                  : <p className="muted">No language data available.</p>}
+              </div>
             </div>
 
             <div className="signal-card">
@@ -260,7 +241,6 @@ export default function HomePage() {
                       </div>
                     ))
                   : <p className="muted">No recent commit history available.</p>}
-                </div>
               </div>
             </div>
 
@@ -271,6 +251,17 @@ export default function HomePage() {
                   ? repository.top_files.map((file) => <div key={file} className="list-item"><span>{file}</span></div>)
                   : <p className="muted">No file hotspot data available.</p>}
               </div>
+            </div>
+          </div>
+
+          <div className="signal-grid">
+            <div className="signal-card">
+              <h3>Commit timeline</h3>
+              <CommitTimeline commits={repository.recent_commits} />
+            </div>
+            <div className="signal-card">
+              <h3>Contributor trends</h3>
+              <ContributorTrends contributors={repository.contributors_list} />
             </div>
           </div>
 

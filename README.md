@@ -38,7 +38,6 @@ python -m uvicorn app.main:app --host 127.0.0.1 --port 8010 --reload
 ### Frontend
 
 ```bash
-# Frontend (Next.js)
 cd frontend
 npm install
 # dev server (local)
@@ -48,6 +47,25 @@ npm run dev -- --hostname 127.0.0.1 --port 3000
 npm run build
 npm start
 ```
+
+### Playwright E2E test
+
+With the backend running on `http://127.0.0.1:8010`, run the frontend test in a separate terminal:
+
+```powershell
+cd C:\Users\HP\Desktop\CodeGenome-AI\frontend
+npx playwright install --with-deps
+npx playwright test
+```
+
+If Playwright is already installed once, you can simply run:
+
+```powershell
+cd C:\Users\HP\Desktop\CodeGenome-AI\frontend
+npx playwright test
+```
+
+The test will automatically start the frontend app and exercise the repository import flow headlessly.
 
 ## Run & restart tips
 
@@ -65,6 +83,8 @@ taskkill /F /PID <pid>
 export NEXT_PUBLIC_API_URL=http://127.0.0.1:8010   # macOS / Linux
 setx NEXT_PUBLIC_API_URL "http://127.0.0.1:8010"  # Windows (persist)
 ```
+
+- If `8010` is already used, start the backend on a different port and update `NEXT_PUBLIC_API_URL` accordingly.
 
 - Quick API test (from backend folder):
 
