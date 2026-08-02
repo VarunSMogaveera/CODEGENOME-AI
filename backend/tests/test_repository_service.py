@@ -41,6 +41,26 @@ class RepositoryServiceTests(unittest.TestCase):
             self.assertGreaterEqual(summary["file_count"], 1)
             self.assertIn("health_score", summary)
 
+    def test_analyze_repository_includes_language_breakdown(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo_path = Path(temp_dir) / "sample-repo"
+            repo_path.mkdir()
+
+            subprocess.run(["git", "init"], cwd=repo_path, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.run(["git", "config", "user.email", "tester@example.com"], cwd=repo_path, check=True)
+            subprocess.run(["git", "config", "user.name", "Tester"], cwd=repo_path, check=True)
+            (repo_path / "main.py").write_text("print('hello')\n", encoding="utf-8")
+            (repo_path / "app.js").write_text("console.log('hi')\n", encoding="utf-8")
+            subprocess.run(["git", "add", "."], cwd=repo_path, check=True)
+            subprocess.run(["git", "commit", "-m", "initial"], cwd=repo_path, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+            summary = analyze_repository(str(repo_path))
+
+            self.assertIn("language_breakdown", summary)
+            breakdown = summary["language_breakdown"]
+            self.assertTrue(any(item["language"] == "Python" for item in breakdown))
+            self.assertTrue(any(item["language"] == "JavaScript" for item in breakdown))
+
     def test_analyze_repository_input_accepts_relative_paths(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             repo_path = Path(temp_dir) / "sample-repo"
